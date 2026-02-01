@@ -1,0 +1,21 @@
+# HuggingFace ecosystem
+transformers==4.45.2
+datasets==2.19.1
+accelerate==0.33.0
+peft==0.12.0
+tokenizers==0.19.1
+
+# Avoid NumPy 2.x issues with datasets + Trainer
+numpy==1.26.4
+
+# Data processing
+pandas==2.2.2
+pyarrow==15.0.2
+
+# Vector DB (for later RAG steps)
+faiss-cpu==1.7.4
+
+# Utilities
+tqdm==4.66.4
+scikit-learn==1.4.2
+rdflib==7.0.0

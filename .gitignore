@@ -1,0 +1,85 @@
+# -------------------------
+# Python
+# -------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+*.pickle
+*.log
+
+# Virtual environments
+venv/
+.env/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# -------------------------
+# OS-specific
+# -------------------------
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# -------------------------
+# Project directories
+# -------------------------
+# HuggingFace datasets saved to disk
+data/
+
+# Model checkpoints
+models/
+!models/.gitkeep
+
+# Tokenizers cache
+tokenizer/
+tokenizer.json
+
+# -------------------------
+# HuggingFace cache
+# -------------------------
+# Global HF cache (avoid committing huge model files)
+~/.cache/huggingface/
+~/.cache/torch/
+~/.cache/transformers/
+
+# Local project cache
+cache/
+.cache/
+
+# -------------------------
+# PyTorch
+# -------------------------
+*.pt
+*.bin
+*.safetensors
+
+# -------------------------
+# Logs & outputs
+# -------------------------
+logs/
+*.log
+output/
+runs/
+
+# -------------------------
+# IDEs
+# -------------------------
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# -------------------------
+# Misc
+# -------------------------
+*.tmp
+*.temp
+*.swp
