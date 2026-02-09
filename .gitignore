@@ -83,3 +83,5 @@ runs/
 *.tmp
 *.temp
 *.swp
+
+.hf_cache
