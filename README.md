@@ -20,3 +20,13 @@
 * `python -m src.prepare_multi_eurlex`
 * `python -m src.train_classifier en`
 * `python -m src.infer_classifier`
+
+`module load Python/3.13.1-GCCcore-14.2.0`
+`nohup python3 -m src.train_reranker > train.log 2>&1 &`
+
+`tmux new -s reranker`
+`tmux -S ~/.tmux/reranker new -s reranker`
+`tmux -S ~/.tmux/reranker attach -t reranker`
+`tmux -S ~/.tmux/reranker ls`
+
+Detach: Ctrl+B then D

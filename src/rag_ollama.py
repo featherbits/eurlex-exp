@@ -1,7 +1,8 @@
 from qdrant_client import QdrantClient
 from sentence_transformers import SentenceTransformer
 import ollama
-from sentence_transformers import CrossEncoder
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch
 
 # ------------------------------------------------------------
 # Config
@@ -11,13 +12,21 @@ QDRANT_URL = "http://localhost:6333"
 COLLECTION_NAME = "eurlex"
 EMBED_MODEL = "BAAI/bge-m3"  # or jinaai/jina-embeddings-v2-base-multilingual
 OLLAMA_MODEL = "llama3"  # or mistral, qwen2.5, etc.
+RERANKER_PATH = "./data/reranker"  # your trained HF reranker
 
 # ------------------------------------------------------------
 # Init
 # ------------------------------------------------------------
 
 embedder = SentenceTransformer(EMBED_MODEL, cache_folder="./.hf_cache")
-reranker = CrossEncoder("BAAI/bge-reranker-large", cache_folder="./.hf_cache")
+
+reranker_tokenizer = AutoTokenizer.from_pretrained(RERANKER_PATH)
+reranker_model = AutoModelForSequenceClassification.from_pretrained(RERANKER_PATH)
+reranker_model.eval()
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+reranker_model.to(device)
+
 client = QdrantClient(QDRANT_URL)
 
 # ------------------------------------------------------------
@@ -25,24 +34,34 @@ client = QdrantClient(QDRANT_URL)
 # ------------------------------------------------------------
 
 
+def score_pair(query: str, passage: str) -> float:
+    """Score a (query, passage) pair with the custom HF reranker."""
+    inputs = reranker_tokenizer(
+        query,
+        passage,
+        return_tensors="pt",
+        truncation=True,
+        padding=True,
+        max_length=512,
+    ).to(device)
+
+    with torch.no_grad():
+        logits = reranker_model(**inputs).logits  # shape [1, 1]
+    score = torch.sigmoid(logits).item()
+    return float(score)
+
+
 def rerank(query, results, top_n=5):
-    """Rerank Qdrant results using a cross-encoder."""
-    pairs = []
-    payloads = []
+    """Rerank Qdrant results using the custom HF reranker."""
+    scored = []
 
     for r in results.points:
         text = r.payload["text"]
-        pairs.append((query, text))
-        payloads.append(r)
+        s = score_pair(query, text)
+        scored.append((s, r))
 
-    # Cross-encoder scores
-    scores = reranker.predict(pairs)
-
-    # Sort by score descending
-    ranked = sorted(zip(scores, payloads), key=lambda x: x[0], reverse=True)
-
-    # Return top_n payloads
-    return [p for _, p in ranked[:top_n]]
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [p for _, p in scored[:top_n]]
 
 
 def build_context(results, max_chars=8000):
@@ -98,10 +117,10 @@ def rag(query: str, k: int = 20, final_k: int = 5):
         limit=k,
     )
 
-    # 3. Rerank
+    # 3. Rerank with custom HF reranker
     reranked = rerank(query, results, top_n=final_k)
 
-    # 4. Build context
+    # 4. Build context from reranked results
     context = "\n\n".join([p.payload["text"] for p in reranked])
 
     # 5. Build prompt
@@ -118,9 +137,9 @@ def rag(query: str, k: int = 20, final_k: int = 5):
 # ------------------------------------------------------------
 
 if __name__ == "__main__":
-    question = "What is the legal basis for GDPR?"
+    question = "What is the definition of 'personal data' under GDPR?"
     answer = rag(question)
-    print(f"\n\nQuestion:")
+    print("\n\nQuestion:")
     print(question)
-    print(f"Answer:")
+    print("Answer:")
     print(answer)
